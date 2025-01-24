@@ -5,25 +5,28 @@ const querystring = require("querystring");
 const axios = require("axios");
 const path = require("path");
 
+// Load environment variables
+dotenv.config();
+
 // Import your existing routes
 const uploadRoutes = require("./routes/upload");
 const themeRoutes = require("./routes/theme");
 const generateRoutes = require("./routes/generate");
-
-dotenv.config();
+// const themeRouter = require("./routes/theme");
+// const generateRouter = require("./routes/generate");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files from uploads folder
 
 // Spotify API credentials
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files from the "uploads" folder
 
 // Route: Spotify Authentication - Login
 app.get("/api/spotify/login", (req, res) => {
@@ -36,7 +39,6 @@ app.get("/api/spotify/login", (req, res) => {
   });
 
   console.log("Spotify login query:", query); // Debugging log for Spotify login request
-
   res.redirect(`https://accounts.spotify.com/authorize?${query}`);
 });
 
@@ -69,12 +71,15 @@ app.get("/api/spotify/callback", async (req, res) => {
     const { access_token, refresh_token } = response.data;
     res.json({ access_token, refresh_token });
   } catch (error) {
-    console.error("Error during Spotify authentication:", error.response?.data || error.message);
+    console.error(
+      "Error during Spotify authentication:",
+      error.response?.data || error.message
+    );
     res.status(400).send("Spotify authentication failed");
   }
 });
 
-// Route: Spotify Token Refresh (Optional)
+// Route: Spotify Token Refresh
 app.get("/api/spotify/refresh_token", async (req, res) => {
   const refresh_token = req.query.refresh_token;
 
@@ -100,7 +105,10 @@ app.get("/api/spotify/refresh_token", async (req, res) => {
     const { access_token } = response.data;
     res.json({ access_token });
   } catch (error) {
-    console.error("Error refreshing Spotify token:", error.response?.data || error.message);
+    console.error(
+      "Error refreshing Spotify token:",
+      error.response?.data || error.message
+    );
     res.status(400).send("Failed to refresh Spotify token");
   }
 });
@@ -109,8 +117,10 @@ app.get("/api/spotify/refresh_token", async (req, res) => {
 app.use("/api/upload", uploadRoutes);
 app.use("/api/theme", themeRoutes);
 app.use("/api/generate", generateRoutes);
+// app.use('/theme', themeRouter);
 
-// Catch-all Route (Optional: Serve Frontend in Production)
+
+// Catch-all Route (Serve Frontend in Production)
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "frontend/build")));
 
@@ -119,7 +129,13 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-// Start Server
+// Error Handling Middleware (Optional)
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err.message || err);
+  res.status(500).json({ message: "Internal Server Error" });
+});
+
+// Start the server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
