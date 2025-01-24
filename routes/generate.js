@@ -8,14 +8,31 @@ const router = express.Router();
 router.post("/", (req, res) => {
   const { audioFile, theme } = req.body;
 
+  // Extract audio file name
+  const audioFileName =
+    typeof audioFile === "string"
+      ? audioFile
+      : audioFile?.fileName || audioFile?.name || "";
+
   // Validate input
-  if (!audioFile || !theme) {
-    return res.status(400).json({ message: "Audio file and theme are required" });
+  if (!audioFileName || !theme) {
+    return res
+      .status(400)
+      .json({ message: "Audio file name and theme are required" });
   }
 
-  const audioPath = path.join(__dirname, "../uploads", audioFile);
-  const themePath = path.join(__dirname, "../themes", `${theme.toLowerCase()}.mp4`);
-  const outputPath = path.join(__dirname, "../uploads", `output-${Date.now()}.mp4`);
+  // Define file paths
+  const audioPath = path.join(__dirname, "../uploads", audioFileName);
+  const themePath = path.join(
+    __dirname,
+    "../themes",
+    `${theme.toLowerCase()}.mp4`
+  );
+  const outputPath = path.join(
+    __dirname,
+    "../uploads",
+    `output-${Date.now()}.mp4`
+  );
 
   // Check if audio file exists
   if (!fs.existsSync(audioPath)) {
@@ -37,12 +54,15 @@ router.post("/", (req, res) => {
     .on("end", () => {
       res.status(200).json({
         message: "Video generated successfully",
-        video: path.basename(outputPath),
+        video: path.basename(outputPath), // Return the output file name
       });
     })
     .on("error", (err) => {
       console.error(err);
-      res.status(500).json({ message: "Error generating video", error: err.message });
+      res.status(500).json({
+        message: "Error generating video",
+        error: err.message,
+      });
     });
 });
 
