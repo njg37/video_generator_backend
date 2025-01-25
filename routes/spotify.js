@@ -1,0 +1,96 @@
+const express = require("express");
+const querystring = require("querystring");
+const axios = require("axios");
+const router = express.Router();
+
+// Spotify API credentials
+const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
+const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
+const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI;
+
+// Route: Spotify Authentication - Login
+router.get("/login", (req, res) => {
+  const scope = "user-read-private user-read-email playlist-read-private";
+  const query = querystring.stringify({
+    response_type: "code",
+    client_id: CLIENT_ID,
+    scope: scope,
+    redirect_uri: REDIRECT_URI,
+  });
+
+  console.log("Spotify login query:", query); // Debugging log for Spotify login request
+  res.redirect(`https://accounts.spotify.com/authorize?${query}`);
+});
+
+// Route: Spotify Callback for Token Exchange
+router.get("/callback", async (req, res) => {
+  const code = req.query.code || null;
+
+  console.log("Spotify callback received with code:", code); // Log the code received
+
+  try {
+    const response = await axios.post(
+      "https://accounts.spotify.com/api/token",
+      querystring.stringify({
+        code: code,
+        redirect_uri: REDIRECT_URI,
+        grant_type: "authorization_code",
+      }),
+      {
+        headers: {
+          Authorization:
+            "Basic " +
+            Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64"),
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    console.log("Spotify token response:", response.data); // Log the response from token exchange
+
+    const { access_token, refresh_token } = response.data;
+    res.json({ access_token, refresh_token });
+  } catch (error) {
+    console.error(
+      "Error during Spotify authentication:",
+      error.response?.data || error.message
+    );
+    res.status(400).send("Spotify authentication failed");
+  }
+});
+
+// Route: Spotify Token Refresh
+router.get("/refresh_token", async (req, res) => {
+  const refresh_token = req.query.refresh_token;
+
+  try {
+    const response = await axios.post(
+      "https://accounts.spotify.com/api/token",
+      querystring.stringify({
+        grant_type: "refresh_token",
+        refresh_token: refresh_token,
+      }),
+      {
+        headers: {
+          Authorization:
+            "Basic " +
+            Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64"),
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    console.log("Spotify token refresh response:", response.data); // Log the response from token refresh
+
+    const { access_token } = response.data;
+    res.json({ access_token });
+  } catch (error) {
+    console.error(
+      "Error refreshing Spotify token:",
+      error.response?.data || error.message
+    );
+    res.status(400).send("Failed to refresh Spotify token");
+  }
+});
+
+module.exports = router;
