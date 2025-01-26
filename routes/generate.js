@@ -87,16 +87,13 @@ router.post("/", async (req, res) => {
    .audioCodec('aac')
    .videoCodec('libx264')
    .outputOptions([
-     "-shortest", // Ensure output duration matches shortest input
-     "-map", "0:v", // Map video from first input
-     "-map", "1:a"  // Map audio from second input
+     "-map", "0:v",  // Video from first input
+     "-map", "1:a",  // Audio from second input
+     "-shortest"     // Ensure output matches shortest input duration
    ])
    .output(outputPath)
    .on("start", (commandLine) => {
      console.log("FFmpeg command:", commandLine);
-   })
-   .on("progress", (progress) => {
-     console.log(`Processing: ${progress.percent}% done`);
    })
    .on("end", () => {
      console.log("Video with audio generated successfully");
@@ -104,21 +101,13 @@ router.post("/", async (req, res) => {
        message: "Video generated successfully",
        video: path.basename(outputPath),
      });
- 
-     // Clean up temporary files
-     fs.unlinkSync(audioPath);
-     fs.unlinkSync(themePath);
    })
    .on("error", (err) => {
-     console.error("Audio-video merge error:", err);
+     console.error("Audio-video sync error:", err);
      res.status(500).json({ 
        message: "Error generating video", 
        error: err.message 
      });
- 
-     // Clean up temporary files
-     if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
-     if (fs.existsSync(themePath)) fs.unlinkSync(themePath);
    })
    .run();
  } catch (error) {
