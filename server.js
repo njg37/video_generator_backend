@@ -20,12 +20,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files from the "uploads" folder
 
-// Add comprehensive CORS configuration
-app.use(cors({
-  origin: ['http://localhost:3000'],
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// // Add comprehensive CORS configuration
+// app.use(cors({
+//   origin: ['http://localhost:3000'],
+//   methods: ['GET', 'POST', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// }));
 
 // Use the routes
 app.use("/api/upload", uploadRoutes);

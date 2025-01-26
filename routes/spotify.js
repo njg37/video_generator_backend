@@ -116,4 +116,64 @@ router.get("/refresh_token", async (req, res) => {
   }
 });
 
+// Route: Spotify Song Search
+router.get("/search", async (req, res) => {
+  const { query, type = 'track', limit = 10 } = req.query;
+  
+  try {
+    // Implement token management - you'll need to store/retrieve access token
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    
+    const response = await axios.get('https://api.spotify.com/v1/search', {
+      params: { q: query, type, limit },
+      headers: { 
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // Extract and return relevant track information
+    const tracks = response.data.tracks.items.map(track => ({
+      id: track.id,
+      name: track.name,
+      artist: track.artists[0].name,
+      album: track.album.name,
+      previewUrl: track.preview_url || null, // Explicitly handle null
+      imageUrl: track.album.images[0]?.url
+    }));
+
+    res.json(tracks);
+  } catch (error) {
+    console.error('Spotify search error:', error.response?.data || error.message);
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to search tracks' 
+    });
+  }
+});
+
+
+// Add this new route to generate/retrieve an access token
+router.get("/token", async (req, res) => {
+  try {
+    // Client Credentials Flow for server-side token
+    const response = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      querystring.stringify({ grant_type: 'client_credentials' }),
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      }
+    );
+
+    res.json({ 
+      access_token: response.data.access_token 
+    });
+  } catch (error) {
+    console.error('Token generation error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to generate access token' });
+  }
+});
+
 module.exports = router;
