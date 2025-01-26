@@ -97,6 +97,8 @@ router.post("/", async (req, res) => {
      })
      .on("end", () => {
        console.log("Video processing completed successfully.");
+       console.log("Generated Video Path:", outputPath);
+       console.log("Video File Exists:", fs.existsSync(outputPath));
        res.status(200).json({
          message: "Video generated successfully",
          video: path.basename(outputPath), // Return the output file name
