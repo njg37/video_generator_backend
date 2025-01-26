@@ -20,11 +20,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files from the "uploads" folder
 
+// Add comprehensive CORS configuration
+app.use(cors({
+  origin: ['http://localhost:3000'],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Use the routes
 app.use("/api/upload", uploadRoutes);
 app.use("/api/theme", themeRoutes);
 app.use("/api/generate", generateRoutes);
 app.use("/api/spotify", spotifyRoutes); // Spotify Routes
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Catch-all Route (Serve Frontend in Production)
 if (process.env.NODE_ENV === "production") {
