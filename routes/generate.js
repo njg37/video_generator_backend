@@ -82,41 +82,45 @@ router.post("/", async (req, res) => {
 
    // Generate video using FFmpeg
    ffmpeg()
-     .input(themePath) // Input theme video
-     .input(audioPath) // Input audio file
-     .audioCodec('aac')  // Explicitly set audio codec
-     .videoCodec('libx264')  // Ensure video codec compatibility
-     .outputOptions("-c:v copy") // Use the same codec for video
-     .outputOptions("-c:a aac") // Convert audio to AAC
-     .output(outputPath) // Specify the output file path
-     .on("start", (commandLine) => {
-       console.log("FFmpeg process started:", commandLine);
-     })
-     .on("progress", (progress) => {
-       console.log(`Processing: ${progress.percent}% done`);
-     })
-     .on("end", () => {
-       console.log("Video processing completed successfully.");
-       console.log("Generated Video Path:", outputPath);
-       console.log("Video File Exists:", fs.existsSync(outputPath));
-       res.status(200).json({
-         message: "Video generated successfully",
-         video: path.basename(outputPath), // Return the output file name
-       });
-
-       // Clean up temporary files
-       fs.unlinkSync(audioPath);
-       fs.unlinkSync(themePath);
-     })
-     .on("error", (err) => {
-       console.error("Error generating video:", err);
-       res.status(500).json({ message: "Error generating video", error: err.message });
-
-       // Clean up temporary files
-       if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
-       if (fs.existsSync(themePath)) fs.unlinkSync(themePath);
-     })
-     .run();
+   .input(themePath)
+   .input(audioPath)
+   .audioCodec('aac')
+   .videoCodec('libx264')
+   .outputOptions([
+     "-shortest", // Ensure output duration matches shortest input
+     "-map", "0:v", // Map video from first input
+     "-map", "1:a"  // Map audio from second input
+   ])
+   .output(outputPath)
+   .on("start", (commandLine) => {
+     console.log("FFmpeg command:", commandLine);
+   })
+   .on("progress", (progress) => {
+     console.log(`Processing: ${progress.percent}% done`);
+   })
+   .on("end", () => {
+     console.log("Video with audio generated successfully");
+     res.status(200).json({
+       message: "Video generated successfully",
+       video: path.basename(outputPath),
+     });
+ 
+     // Clean up temporary files
+     fs.unlinkSync(audioPath);
+     fs.unlinkSync(themePath);
+   })
+   .on("error", (err) => {
+     console.error("Audio-video merge error:", err);
+     res.status(500).json({ 
+       message: "Error generating video", 
+       error: err.message 
+     });
+ 
+     // Clean up temporary files
+     if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+     if (fs.existsSync(themePath)) fs.unlinkSync(themePath);
+   })
+   .run();
  } catch (error) {
    console.error("Unexpected error:", error);
    res.status(500).json({ message: "An unexpected error occurred", error: error.message });
