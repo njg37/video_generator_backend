@@ -10,7 +10,6 @@ dotenv.config();
 const uploadRoutes = require("./routes/upload");
 const themeRoutes = require("./routes/theme");
 const generateRoutes = require("./routes/generate");
-const spotifyRoutes = require("./routes/spotify"); // Spotify Routes
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -31,7 +30,6 @@ app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files 
 app.use("/api/upload", uploadRoutes);
 app.use("/api/theme", themeRoutes);
 app.use("/api/generate", generateRoutes);
-app.use("/api/spotify", spotifyRoutes); // Spotify Routes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Catch-all Route (Serve Frontend in Production)
